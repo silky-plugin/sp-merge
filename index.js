@@ -78,7 +78,7 @@ exports.registerPlugin = (cli, optionsArr)=>{
           })
         }else{
           sourceArr.forEach((item)=>{
-            let filepath = _path.join(cli.cwd, option.suffix, item + option.postfix)
+            let filepath = _path.join(cli.cwd(), option.suffix, item + option.postfix)
             responseContent = responseContent + `;/*${_path.basename(filepath)} 👉*/;` + _fs.readFileSync(filepath)
           })
         }
