@@ -26,6 +26,10 @@ exports.registerPlugin = (cli, optionsArr)=>{
         if(isMatchRegExp(inputFilePath, option.source)){
           let outTargetFile = _path.join(data.outdir, option.target)
           outputFileArr.push(outTargetFile)
+           //保持原文件输出
+          if(option.keepSource){
+            outputFileArr.push(data.outputFilePath)
+          }
         }
       }else{
         //字符串匹配模式
@@ -33,11 +37,14 @@ exports.registerPlugin = (cli, optionsArr)=>{
         option.source.forEach((filename)=>{
           if(inputFilePath.indexOf(`${option.suffix}${filename}${option.postfix}`) != -1){
             outputFileArr.push(_path.join(data.outdir, option.target + option.postfix))
+            //保持原文件输出
+            if(option.keepSource){
+              outputFileArr.push(data.outputFilePath)
+            }
           }}
         )
       }
     })
-
     if(outputFileArr.length){
       data.outputFilePath = outputFileArr;
       data.appendFile = true

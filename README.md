@@ -11,7 +11,8 @@
     "source": [
       "(\\-componts\\.js)$",
       "B-beMerge"
-    ]
+    ],
+    "keepSource": false //是否把被合并的个体文件也属出来， 默认false。 可选true
   },
   {
     "suffix": "js/",
@@ -20,7 +21,8 @@
     "source": [
       "A-componts",
       "B-beMerge"
-    ]
+    ],
+    "keepSource": false //是否把被合并的个体文件也属出来， 默认false。 可选true
   },
   ...
 ]
