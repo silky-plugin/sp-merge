@@ -1,7 +1,10 @@
 {
   "name": "sp-merge",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "description": "",
   "main": "index.js",
-  "author": ""
+  "author": "",
+  "dependencies": {
+    "fs-extra": "^3.0.1"
+  }
 }

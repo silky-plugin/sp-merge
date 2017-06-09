@@ -1,7 +1,6 @@
 'use strict';
 const _path = require('path');
-const _fs = require('fs');
-
+const _fs = require('fs-extra')
 function isMatchRegExp(str, arr){
   if(!arr || arr.length == 0){return false}
   for(let i = 0, length = arr.length; i < length; i++){
@@ -17,42 +16,35 @@ exports.registerPlugin = (cli, optionsArr)=>{
     cli.log.warn(`插件${require('./package.json').name}没有有效配置，跳过插件注册`.yellow)
     return;
   }
-  cli.registerHook('build:didCompile', (buildConfig, data, content, cb)=>{
-    let outputFileArr = [];
-    let inputFilePath = data.inputFilePath;
-    optionsArr.forEach((option)=>{
-      //正则表达式匹配模式
-      if(option._regexp){
-        if(isMatchRegExp(inputFilePath, option.source)){
-          let outTargetFile = _path.join(data.outdir, option.target)
-          outputFileArr.push(outTargetFile)
-           //保持原文件输出
-          if(option.keepSource){
-            outputFileArr.push(data.outputFilePath)
+  
+  cli.registerHook('build:end', (buildConfig, cb)=>{
+    let outdir = buildConfig.outdir;
+    try{
+      optionsArr.forEach((option)=>{
+        let targetFilepath = _path.join(outdir, option.target + option.postfix);
+        let beMergedDir = _path.join(outdir, option.suffix);
+        option.source.forEach((source)=>{
+          let beMergedFilePath = _path.join(beMergedDir, source + option.postfix)
+          let fileContent = `;/*${source} 👉*/;` + _fs.readFileSync(beMergedFilePath,"utf8")
+          if(_fs.existsSync(targetFilepath)){
+            _fs.appendFileSync(targetFilepath, fileContent, {encoding:"utf8"})
+          }else{
+            _fs.ensureFileSync(targetFilepath)
+            _fs.writeFileSync(targetFilepath, fileContent, {encoding:"utf8"})
           }
-        }
-      }else{
-        //字符串匹配模式
-        if(!option.source || option.source.length  < 1){return}
-        option.source.forEach((filename)=>{
-          if(inputFilePath.indexOf(`${option.suffix}${filename}${option.postfix}`) != -1){
-            outputFileArr.push(_path.join(data.outdir, option.target + option.postfix))
-            //保持原文件输出
-            if(option.keepSource){
-              outputFileArr.push(data.outputFilePath)
-            }
-          }}
-        )
-      }
-    })
-    if(outputFileArr.length){
-      data.outputFilePath = outputFileArr;
-      data.appendFile = true
-      content = `;/*${data.fileName} 👉*/;` + content;
+          if(!option.keepSource){
+            _fs.unlinkSync(beMergedFilePath)
+          }
+        })
+      })
+      cb()
+    }catch(e){
+      console.log(e)
+      cb(e)
     }
-    cb(null, content)
-
-  }, 100)
+    
+    
+  },50)
 
   cli.registerHook('route:didRequest', (req, data, content, cb)=>{
     let realPath = data.realPath;
