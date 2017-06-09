@@ -25,12 +25,12 @@ exports.registerPlugin = (cli, optionsArr)=>{
         let beMergedDir = _path.join(outdir, option.suffix);
         option.source.forEach((source)=>{
           let beMergedFilePath = _path.join(beMergedDir, source + option.postfix)
-          let fileContent = `;/*${source} 👉*/;` + _fs.readFileSync(beMergedFilePath,"utf8")
+          let fileContent =  _fs.readFileSync(beMergedFilePath,"utf8")
           if(_fs.existsSync(targetFilepath)){
-            _fs.appendFileSync(targetFilepath, fileContent, {encoding:"utf8"})
+            _fs.appendFileSync(targetFilepath, `\n;/*${source} 👉*/;`+fileContent, {encoding:"utf8"})
           }else{
             _fs.ensureFileSync(targetFilepath)
-            _fs.writeFileSync(targetFilepath, fileContent, {encoding:"utf8"})
+            _fs.writeFileSync(targetFilepath, `;/*${source} 👉*/;` +fileContent, {encoding:"utf8"})
           }
           if(!option.keepSource){
             _fs.unlinkSync(beMergedFilePath)
