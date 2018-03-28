@@ -17,36 +17,29 @@ exports.registerPlugin = (cli, optionsArr)=>{
     return;
   }
   
-  cli.registerHook('build:end', (buildConfig, cb)=>{
+  cli.registerHook('build:end', async (buildConfig, cb)=>{
     let outdir = buildConfig.outdir;
-    try{
-      optionsArr.forEach((option)=>{
-        let targetFilepath = _path.join(outdir, option.target + option.postfix);
-        let beMergedDir = _path.join(outdir, option.suffix);
-        option.source.forEach((source)=>{
-          let beMergedFilePath = _path.join(beMergedDir, source + option.postfix)
-          let fileContent =  _fs.readFileSync(beMergedFilePath,"utf8")
-          if(_fs.existsSync(targetFilepath)){
-            _fs.appendFileSync(targetFilepath, `\n;/*${source} 👉*/;`+fileContent, {encoding:"utf8"})
-          }else{
-            _fs.ensureFileSync(targetFilepath)
-            _fs.writeFileSync(targetFilepath, `;/*${source} 👉*/;` +fileContent, {encoding:"utf8"})
-          }
-          if(!option.keepSource){
-            _fs.unlinkSync(beMergedFilePath)
-          }
-        })
+    optionsArr.forEach((option)=>{
+      let targetFilepath = _path.join(outdir, option.target + option.postfix);
+      let beMergedDir = _path.join(outdir, option.suffix);
+      option.source.forEach((source)=>{
+        let beMergedFilePath = _path.join(beMergedDir, source + option.postfix)
+        let fileContent =  _fs.readFileSync(beMergedFilePath,"utf8")
+        if(_fs.existsSync(targetFilepath)){
+          _fs.appendFileSync(targetFilepath, `\n;/*${source} 👉*/;`+fileContent, {encoding:"utf8"})
+        }else{
+          _fs.ensureFileSync(targetFilepath)
+          _fs.writeFileSync(targetFilepath, `;/*${source} 👉*/;` +fileContent, {encoding:"utf8"})
+        }
+        if(!option.keepSource){
+          _fs.unlinkSync(beMergedFilePath)
+        }
       })
-      cb()
-    }catch(e){
-      console.log(e)
-      cb(e)
-    }
-    
-    
+    })
+    return
   },50)
 
-  cli.registerHook('route:didRequest', (req, data, content, cb)=>{
+  cli.registerHook('route:didRequest', async(req, data, content)=>{
     let realPath = data.realPath;
     for(let i = 0, length = optionsArr.length; i < length; i++){
       let option = optionsArr[i];
@@ -60,34 +53,29 @@ exports.registerPlugin = (cli, optionsArr)=>{
       }
       let responseContent = ""
       let sourceArr = option.source || [];
-      try{
-        if(option._regexp){
-          let allFile = cli.utils.getAllFileInProject(true)
-          let matchFileQueue = [];
-          sourceArr.forEach((item)=>{
-            let reg = new RegExp(item);
-            allFile.forEach((filepath)=>{
-              if(reg.test(filepath)){
-                matchFileQueue.push(filepath)
-              }
-            })
-          });
-          matchFileQueue.forEach((filePath)=>{
-            responseContent = responseContent + `;/*${_path.basename(filePath)} 👉*/;` + _fs.readFileSync(filePath)
+      if(option._regexp){
+        let allFile = cli.utils.getAllFileInProject(true)
+        let matchFileQueue = [];
+        sourceArr.forEach((item)=>{
+          let reg = new RegExp(item);
+          allFile.forEach((filepath)=>{
+            if(reg.test(filepath)){
+              matchFileQueue.push(filepath)
+            }
           })
-        }else{
-          sourceArr.forEach((item)=>{
-            let filepath = _path.join(cli.cwd(), option.suffix, item + option.postfix)
-            responseContent = responseContent + `;/*${_path.basename(filepath)} 👉*/;` + _fs.readFileSync(filepath)
-          })
-        }
-        data.status = 200
-        cb(null, responseContent)
-      }catch(e){
-        cb(e)
+        });
+        matchFileQueue.forEach((filePath)=>{
+          responseContent = responseContent + `;/*${_path.basename(filePath)} 👉*/;` + _fs.readFileSync(filePath)
+        })
+      }else{
+        sourceArr.forEach((item)=>{
+          let filepath = _path.join(cli.cwd(), option.suffix, item + option.postfix)
+          responseContent = responseContent + `;/*${_path.basename(filepath)} 👉*/;` + _fs.readFileSync(filepath)
+        })
       }
-      return
+      data.status = 200
+      return  responseContent
     }
-    cb(null, content)
+    return content
   }, 1)
 }
